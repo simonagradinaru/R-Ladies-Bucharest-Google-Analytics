@@ -1,0 +1,156 @@
+---
+title: "How to use Google Analytics for Tracking using R"
+subtitle: "[thescienceofdating.rbind.io](https://thescienceofdating.rbind.io)"
+output: html_notebook
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set( echo = FALSE, warnings = FALSE )
+library(googleAnalyticsR)
+library(googleAuthR)
+library(ggplot2)
+library(ggrepel)
+library(modelr)
+library(viridis)
+library(scales)
+```
+
+
+# Introduction 
+
+Google Analytics data can be mined directly in R using `googleanalyticsR` package, allowing us to perform statistical analysis that would better understand, improve and later optimize website performance. 
+
+
+## Content
+
+#### 1. Connect R and Google Analytics API. 
+
+#### 2. Data overview. 
+
+#### 3. Data visualization. 
+
+#### 4. Data insights. 
+
+
+## 1. Connect R and Google Analytics API. 
+
+```{r connect_googleAnalyticsR, echo = TRUE}
+# Connect R and Google Analytics
+ga_auth()
+
+# Generate a list of all the Google Analytics accounts you have access to
+ga_accounts <- ga_account_list()
+
+# ga_id contains the View ID for querying
+ga_id <- pull(ga_accounts[2,1])
+
+# Download all data and store it in a dataframe
+# blog was launched on September 11, 2020
+ga_df <- google_analytics(ga_id,
+                          metrics = c("users", "sessions"),
+                          dimensions = "date", 
+                          date_range = c("2020-09-11", as.character(Sys.Date()-1))
+                          )
+
+# Obtain Google Analytics data by device category
+byDevice_df <- google_analytics(ga_id, 
+                                date_range = c("2020-09-11", as.character(Sys.Date()-1)),
+                                metrics = c("sessions", "avgSessionDuration"),
+                                dimensions = c("date", "deviceCategory")
+                                )
+```
+
+
+## 2. Data overview.
+
+Google's Basic visitor interaction model:
+
+* **Visitor** — the client that visits the site, such as the browser or mobile phone operated by a person.
+
+* **Session** — the period of time during which the visitor is active on the site.
+
+* **Page** — activity on the user's behalf which sends a GIF request to the Analytics servers. This is typically characterized by a pageview, but it can include: a pageview or
+an event (e.g. click on a movie button). 
+
+
+Variables available in Google Analitics: 
+
+* Users 
+
+* Sesssions 
+
+* Bounces (visitors who leave the website after visiting only one page)
+
+* Devices used for visiting the website: desktop, mobile or tablet
+
+* Users' location: continent and country
+
+* Website traffic by channel (organic, social, direct)
+
+* Campaign metrics
+
+* Metrics by segments of users
+
+
+## 3. Data visualization.
+
+#### How did sessions evolve through time? 
+
+Slow slope at the beginning, peaks of users when new posts are released. Intensive traffic appeared especially when the blog article was shared in **Facebook and Linkedin posts**. 
+
+```{r dailyUsers, echo = TRUE, include = TRUE}
+# Daily users with labels
+ggplot(ga_df, aes(x = date, y = users, label = users)) + 
+  geom_line() + 
+  geom_point()+
+  geom_label(aes(label = users), 
+             size = 2, 
+             fill = viridis(3)[2], 
+             colour = "white", 
+             fontface = "bold") + 
+  scale_x_date(labels = date_format("%m-%Y")) +
+  theme_light() + 
+  ylab("Users") + 
+  xlab("Date") +
+  ggtitle("Daily users: September 2020 - February 2021") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 15)) 
+```
+
+
+#### What are the most frequenct devices used for visiting the blog?
+
+```{r byDevice, echo = TRUE, include = TRUE, warnings = FALSE}
+# Plot sessions with deviceCategory
+byDevice_df %>%
+  ggplot(aes(x = deviceCategory, y = sessions, fill = deviceCategory)) +   
+  geom_bar(stat = "identity", position = position_dodge(-.9), show.legend = FALSE) + 
+  theme_light() +
+  scale_fill_manual(values = viridis::viridis(5), aesthetics = "fill") + 
+  coord_flip() + 
+  xlab("Sessions") + 
+  ylab("Device Category") +
+  theme(panel.grid = element_blank()) + 
+  ggtitle("Sessions by device category") +
+  theme(plot.title = element_text(hjust = 0.5, face = "bold", size = 15)) 
+```
+
+
+#### tbd 
+
+
+#### 4. Data insights. 
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+
